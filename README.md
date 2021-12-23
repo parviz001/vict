@@ -38,57 +38,58 @@ location /quiz/img/ {
 
 Дальше вся изначальная настройка сервера:
 
-# Подключаемся по ssh к серверу
+### Подключаемся по ssh к серверу
 
 // опционально - настраиваем подключение по ssh без пароля
 // здесь и далее на все вопросы гугл в помощь
 
-# Устанавливаем npm и nodejs
+### Устанавливаем npm и nodejs
 apt-get install npm
 
-# Устанавливаем postgresql
+### Устанавливаем postgresql
 
 apt-get install postgresql
 
-# перелогиниваемся в пользователя postgres
+### перелогиниваемся в пользователя postgres
 su - postgres
 
-# запускаем консоль postgres
+### запускаем консоль postgres
 psql
 
-# создаём в postgres пользователя и базу данных
-
+### создаём в postgres пользователя и базу данных
+```sql
 create user quiz_user with encrypted password 'quiz';
 
 create database quiz_db;
 
 grant all privileges on database quiz_db to quiz_user;
+```
 
-Подключаемся к базе данных через DataGrip и запускаем волшебный файл init.sql
+Подключаемся к базе данных через DataGrip и запускаем волшебный файл `init.sql`
 Или делаем это без DataGrip через терминал
 
 
-# Возвращаемся к нормальному пользователю
+### Возвращаемся к нормальному пользователю
 exit
 exit
-# Устанавливаем pg для работы с postgresql
+### Устанавливаем pg для работы с postgresql
 npm install pg
 
-# Устанавливаем pm2
+### Устанавливаем pm2
 npm install pm2@latest -g
 
-# Устанавливаем nginx
+### Устанавливаем nginx
 apt install nginx
 
 
 
-# создаём файл ~/quiz/quiz.js
-# запускать его мы будем либо так для тестов:
+### создаём файл ~/quiz/quiz.js
+### запускать его мы будем либо так для тестов:
 node quiz.js
-# либо так, когда хотим, чтобы сервер непрерывно работал:
+### либо так, когда хотим, чтобы сервер непрерывно работал:
 pm2 start quiz.js
 
-# Меняем файл nginx.conf
+### Меняем файл nginx.conf
 Чистим файл /etc/nginx/sites-available/default
 
 vim /etc/nginx/nginx.conf
@@ -122,23 +123,23 @@ server {
                 }
         }
 
-# Заходим на freenom и берём себе халявный домен на год. Нужно брать на dns
+### Заходим на freenom и берём себе халявный домен на год. Нужно брать на dns
 quiz-game.cf
 Проверяем, что домен подгрузился на DNS сервера (запускаем простенький сервер на node.js и заходим в браузере на quiz-game.cf)
 http://quiz-game.cf/query2/
 
-# Теперь настраиваем ssl (для https) с помощью certbot
+### Теперь настраиваем ssl (для https) с помощью certbot
 apt install snapd
 snap install --classic certbot
 
 /snap/bin/certbot certonly --webroot -w /var/www/quiz/ -d quiz-game.cf
 
-# certbot пишет:
+### certbot пишет:
 Successfully received certificate.
 Certificate is saved at: /etc/letsencrypt/live/quiz-game.cf/fullchain.pem
 Key is saved at:         /etc/letsencrypt/live/quiz-game.cf/privkey.pem
 
-# Раскомменчиваем вот эти строки в /etc/nginx/nginx.conf:
+### Раскомменчиваем вот эти строки в /etc/nginx/nginx.conf:
 listen        0.0.0.0:443 ssl;
 ssl_certificate     /etc/letsencrypt/live/quiz-game.cf/fullchain.pem;
 ssl_certificate_key /etc/letsencrypt/live/quiz-game.cf/privkey.pem;
