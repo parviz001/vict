@@ -29,7 +29,7 @@ const pool = new Pool({
     user:       'quiz_user',
     host:       'localhost',
     database:   'quiz_db',
-    password:   'quiz',
+    password:   'secretquiz',
     port:       5432,
     max: 20,
     idleTimeoutMillis: 30000,
@@ -405,6 +405,43 @@ async function get_rating_table() {
     };
 }
 
+async function set_one_score(req_json) {
+    try {
+        let user_nm = req_json["user_nm"];
+        let pswd = req_json["pswd"];
+        let nowq_id = req_json["question_id"];
+        let score_num = req_json["score"];
+
+        let user_id = await get_user_id(user_nm, pswd);
+
+        if (user_id == "failed") {
+            return {
+                status: "failed",
+                error: "login"
+            };
+        }
+        let queryText = 'INSERT INTO quiz.score(user_id, question_id, round_id, score_num) VALUES($1, $2, $3, $4) RETURNING *';
+        let round_id = await get_q_round_id(nowq_id);
+        if (round_id == "failed") {
+            return {
+                status: "failed",
+                error: "incorrect question_id"
+            };
+        }
+        let resp = await pool.query(queryText, [user_id, nowq_id, round_id, score_num]);
+        return {
+            status: resp
+        }
+    } catch(err) {
+        console.log("add_score err");
+        console.log(err);
+        return {
+            status: "failed",
+            error: err
+        };
+    }
+}
+
 async function set_score(req_json) {
     try {
         let user_nm = req_json["user_nm"];
@@ -418,8 +455,8 @@ async function set_score(req_json) {
                 error: "login"
             };
         }
-
-        let queryText = 'INSERT INTO quiz.score(user_id, question_id, round_id, score_num) VALUES($1, $2, $3, $4)';
+	let responses = [];
+        let queryText = 'INSERT INTO quiz.score(user_id, question_id, round_id, score_num) VALUES($1, $2, $3, $4) RETURNING *';
         let scores = req_json["scores"]
         for (let i = 0; i < scores.length; i++) {
             let now_score = scores[i];
@@ -433,9 +470,10 @@ async function set_score(req_json) {
             }
             let score_num = now_score["score"];
             let resp = await pool.query(queryText, [user_id, nowq_id, round_id, score_num]);
+	    responses.push(resp);
         }
         return {
-            status: "ok"
+            status: responses
         }
     } catch(err) {
         console.log("add_score err");
@@ -534,6 +572,11 @@ async function query(req_json) {
 
     if (req_json['type'] == 'set_score') {
         let res_json = set_score(req_json);
+        return res_json;
+    }
+
+    if (req_json['type'] == 'set_one_score') {
+        let res_json = set_one_score(req_json);
         return res_json;
     }
 
